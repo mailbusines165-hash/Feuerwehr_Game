@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feuerwehr Einsatzleiter</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#111;color:#fff}
+#app{min-height:100vh}.menu{min-height:100vh;display:grid;place-items:center;text-align:center;padding:30px;background:radial-gradient(circle,#5b1717,#0b0d12 65%)}
+.menu h1{font-size:clamp(30px,6vw,70px);margin:0 0 8px}.menu p{color:#ccd1da}
+.cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-top:35px}
+.card{width:280px;padding:25px;border:1px solid #ffffff30;border-radius:18px;background:#171c25;color:#fff;cursor:pointer;font-size:17px;box-shadow:0 15px 45px #0008}
+.card:hover{transform:translateY(-3px);background:#222a35}.card b,.card span{display:block}.card span{margin-top:10px;color:#aeb7c5}
+.game{min-height:100vh;background:#426b3e;position:relative;overflow:hidden}
+.top{height:60px;background:#121821ee;display:flex;align-items:center;gap:18px;padding:10px 15px;position:relative;z-index:5}.top button,.panel button,.modal button{background:#252d38;color:white;border:1px solid #ffffff20;border-radius:9px;padding:10px 13px;cursor:pointer}.top strong{font-size:18px}.top span{margin-left:auto;color:#d4dae3}
+.map{height:calc(100vh - 60px);position:relative;overflow:hidden;background:
+linear-gradient(90deg,transparent 46%,#30343a 46%,#30343a 54%,transparent 54%),
+linear-gradient(0deg,transparent 46%,#30343a 46%,#30343a 54%,transparent 54%),#587b4b}
+.roadline{position:absolute;background:#eee6;z-index:1}.roadline.v{width:4px;height:100%;left:50%;top:0}.roadline.h{height:4px;width:100%;top:50%;left:0}
+.building{position:absolute;width:105px;height:75px;border:3px solid #444;box-shadow:7px 8px 0 #0004;border-radius:4px;z-index:2}
+.station{position:absolute;left:50%;top:53%;transform:translate(-50%,-50%);width:430px;height:190px;background:#ddd;border:6px solid #8d1d1d;z-index:3;box-shadow:12px 15px 0 #0004}
+.station h2{text-align:center;color:#9b1717;margin:14px}.gates{display:flex;gap:8px;justify-content:center}.gate{height:95px;width:52px;background:#3b4147;border:3px solid #777;cursor:pointer;position:relative}.gate:after{content:'TOR';position:absolute;bottom:-25px;left:7px;color:#222;font-weight:bold;font-size:11px}
+.hydrant{position:absolute;right:16%;top:25%;z-index:4;background:#e22;border-radius:50%;width:20px;height:20px;border:3px solid #fff;cursor:pointer}.forest{position:absolute;left:5%;top:12%;width:30%;height:30%;background:#2f5b31;border-radius:45%;z-index:1}
+.panel{position:absolute;z-index:10;left:15px;bottom:15px;width:330px;max-height:70%;overflow:auto;padding:16px;background:#111821ee;border:1px solid #ffffff25;border-radius:14px;box-shadow:0 15px 45px #0008}.panel h2{margin-top:0}.panel button{margin:4px}.vehicle{display:flex;justify-content:space-between;border-bottom:1px solid #ffffff15;padding:7px 0}.modal{position:fixed;z-index:20;left:50%;top:50%;transform:translate(-50%,-50%);width:min(470px,92vw);background:#151b24;border:1px solid #ffffff30;border-radius:16px;padding:20px;box-shadow:0 25px 80px #000}.modal button{display:block;width:100%;margin:7px 0;text-align:left}
+</style></head><body><div id="app"></div>
+<script>
+const vehicles=[
+['ELW 1','Einsatzleitung',2],['ELW 2','Einsatzleitung',2],['DLK 1','Drehleiter',2],['DLK 2','Drehleiter',2],
+['HLF 1','HLF',5],['HLF 2','HLF',5],['HLF 3','HLF',5],['HLF 4','HLF',5],
+['LF 1','LF',4],['LF 2','LF',4],['LF 3','LF',4],['LF 4','LF',4],
+['RTW 1','Rettungsdienst',2],['RTW 2','Rettungsdienst',2],['NEF','Notarzt',2]];
+const calls=[
+['Kleinbrand','Mülleimerbrand'],['Wohnungsbrand','Brand in einem Wohngebäude'],['Großbrand','Brand in einem Einkaufszentrum'],
+['Waldbrand','Waldbrand an einer Landstraße'],['Verkehrsunfall','Verkehrsunfall mit mehreren Verletzten'],
+['Unwetterschaden','Baum auf Fahrbahn'],['Personenrettung','Person in Höhe / technische Rettung']
+];
+let state={screen:'menu',call:null,selected:null,timer:240};
+const app=document.getElementById('app');
+function speak(t){if('speechSynthesis'in window){speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang='de-DE';u.rate=.9;speechSynthesis.speak(u)}}
+function menu(){app.innerHTML='<div class="menu"><div><h1>🚒 FEUERWEHR EINSATZLEITER</h1><p>3D-Einsatzleitung · Open World · Einsatzsimulation</p><div class="cards"><button class="card" onclick="free()"><b>Open-World / Freies Spiel</b><span>Wache, Stadt und freie Kamera</span></button><button class="card" onclick="calls()"><b>Einsätze</b><span>Brände, Verkehrsunfälle und Rettung</span></button></div></div></div>'}
+function map(){let bs='';for(let i=0;i<24;i++){let x=3+(i%6)*16,y=4+Math.floor(i/6)*22;bs+=`<div class="building" style="left:${x}%;top:${y}%;background:${['#cba77d','#aebfca','#d6c78d','#bd8e98'][i%4]}"></div>`}
+app.innerHTML=`<div class="game"><div class="top"><button onclick="menu()">← Menü</button><strong>${state.call?'🚨 '+state.call[0]:'🚒 Feuerwache – Freies Spiel'}</strong><span>${state.call?'Einsatz läuft':'Nächster Einsatz: '+Math.floor(state.timer/60)+':'+String(state.timer%60).padStart(2,'0')}</span></div><div class="map"><div class="roadline v"></div><div class="roadline h"></div><div class="forest"></div>${bs}<div class="hydrant" onclick="alert('Hydrant ausgewählt – Wasserversorgung vorbereiten')"></div><div class="station"><h2>FEUERWEHR</h2><div class="gates">${[1,2,3,4,5,6].map(i=>`<div class="gate" onclick="garage(${i})"></div>`).join('')}</div></div></div><div class="panel"><h2>${state.call?'🚨 '+state.call[0]:'Wache'}</h2><p>${state.call?state.call[1]:'Klicke auf ein Garagentor, einen Einsatz oder den Hydranten.'}</p>${state.call?`<button onclick="selectVehicle()">🚒 Fahrzeug positionieren</button><button onclick="alert('Schlauchsystem vorbereitet')">💧 Schläuche / Wasserversorgung</button><button onclick="alert('DLK ausgefahren')">🪜 DLK ausfahren / Personenrettung</button>`:'<button onclick="calls()">🚨 Einsatz auswählen</button>'}</div></div>`}
+function free(){state.screen='free';map();startTimer()}
+function calls(){state.screen='calls';app.innerHTML='<div class="menu"><div><h1>🚨 Einsätze</h1><div class="cards">'+calls.map((c,i)=>`<button class="card" onclick="startCall(${i})"><b>${c[0]}</b><span>${c[1]}</span></button>`).join('')+'</div><br><button class="top button" onclick="menu()">← zurück</button></div></div>'}
+function startCall(i){state.call=calls[i];state.timer=0;map();speak('Einsatzmeldung. '+state.call[0]+'. '+state.call[1]+'.');}
+function garage(i){let v=vehicles[i%vehicles.length];alert('Garagentor '+i+' geöffnet. '+v[0]+' steht bereit.\n\nKlicke auf „Einsatz auswählen“, um auszurücken.')}
+function selectVehicle(){let names=vehicles.map(v=>v[0]).join('\n');let n=prompt('Welches Fahrzeug soll positioniert werden?\n\n'+names);if(n)state.selected=n}
+function startTimer(){clearInterval(window.t);window.t=setInterval(()=>{if(!state.call&&state.timer>0){state.timer--;map()}},1000)}
+menu();
+</script></body></html>
